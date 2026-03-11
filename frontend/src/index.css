@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Global Overrides ───────────────────────────────── */
+body {
+  @apply bg-surface-900 text-white font-sans;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-surface-800;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-surface-700 rounded-full;
+}
+
+/* ─── Glassmorphism Card ─────────────────────────────── */
+.glass-card {
+  @apply bg-white/[0.04] backdrop-blur-xl border border-white/[0.08]
+         rounded-2xl shadow-lg shadow-black/20;
+}
+
+/* ─── Status Badges ──────────────────────────────────── */
+.badge-passed {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+         bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/20;
+}
+.badge-blocked {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+         bg-red-500/15 text-red-400 ring-1 ring-red-500/20;
+}
