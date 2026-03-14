@@ -3,9 +3,9 @@ import axios from 'axios';
 
 const AuthContext = createContext(null);
 
-// Create an Axios instance with the base URL mapped to our Vite proxy
+// Create an Axios instance with the base URL mapped to our Vite proxy (dev) or explicit backend (prod)
 export const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api',
 });
 
 // Interceptor to inject the JWT token to every request

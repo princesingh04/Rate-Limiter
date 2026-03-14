@@ -11,7 +11,8 @@ import RequestTable from './RequestTable';
 export default function Dashboard({ summary, logs, loading, onPageChange, activeProject }) {
   const [copied, setCopied] = useState(false);
 
-  const proxyUrl = activeProject ? `http://localhost:4000/proxy/${activeProject._id}` : '';
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+  const proxyUrl = activeProject ? `${apiUrl}/proxy/${activeProject._id}` : '';
 
   const handleCopy = () => {
     navigator.clipboard.writeText(proxyUrl);
