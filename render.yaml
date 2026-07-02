@@ -1,0 +1,43 @@
+services:
+  # 1. Backend API Service
+  - type: web
+    name: rate-limiter-backend
+    env: node
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: PORT
+        value: 4000
+      - key: NODE_ENV
+        value: production
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: rate-limiter-redis
+          property: connectionString
+      # You MUST manually provide a MongoDB URI in your Render Dashboard for this!
+      - key: MONGO_URI
+        sync: false
+      - key: TARGET_URL
+        value: https://httpbin.org
+
+  # 2. Frontend Static Site
+  - type: web
+    name: rate-limiter-frontend
+    env: static
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: rate-limiter-backend
+          envVarKey: RENDER_EXTERNAL_URL
+
+  # 3. Redis Instance
+  - type: redis
+    name: rate-limiter-redis
+    plan: free
+    ipAllowList: [] # Internal access only
