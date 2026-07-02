@@ -12,12 +12,32 @@ Client → Express Gateway → Rate Limiter Middleware → http-proxy-middleware
 
 ## Rate Limiting Algorithms
 
-| Algorithm | Redis Structure | Route | Complexity |
-|---|---|---|---|
-| **Token Bucket** | Hash (`HSET`/`HGETALL`) | `/proxy/*` | O(1) time, O(1) space per key |
-| **Sliding Window Log** | Sorted Set (`ZADD`/`ZREMRANGEBYSCORE`/`ZCARD`) | `/proxy-sw/*` | O(log N) time, O(N) space per key |
+This API Gateway implements two enterprise-grade rate-limiting algorithms. Both are executed as **Atomic Lua Scripts** inside Redis. Using Lua scripts guarantees that the entire evaluate-and-update process runs as a single, uninterrupted transaction, completely eliminating race conditions in highly concurrent environments without the overhead of distributed locks.
 
-Both algorithms are implemented as **atomic Lua scripts** to eliminate race conditions without distributed locks.
+### 1. Token Bucket
+**Concept:** Imagine a bucket with a fixed capacity of tokens. Tokens are added to the bucket at a constant rate (e.g., 1 token per second). Every incoming request consumes one token. If the bucket is empty, the request is blocked. This algorithm is excellent for handling smooth traffic while allowing short bursts.
+
+**Implementation Details:**
+- **Redis Structure:** Hash (`HSET`, `HGETALL`)
+- **Memory Footprint:** O(1) space per user/project.
+- **How it works:**
+  1. A Lua script retrieves the `tokens` and `lastRefill` timestamp from the Redis Hash.
+  2. It calculates how much time has passed since `lastRefill` and mathematically adds the proportional number of new tokens (capped at maximum capacity).
+  3. If `tokens >= 1`, it decrements the count by 1, updates `lastRefill` to the current time, and allows the request.
+  4. If `tokens < 1`, the request is instantly blocked.
+
+### 2. Sliding Window Log
+**Concept:** Instead of using rigid, fixed time blocks (which suffer from boundary spikes), this algorithm keeps a precise timestamp log of every individual request. It dynamically counts exactly how many requests occurred in the trailing time window (e.g., the last 60 seconds). If the count exceeds the limit, the request is blocked.
+
+**Implementation Details:**
+- **Redis Structure:** Sorted Set (`ZADD`, `ZREMRANGEBYSCORE`, `ZCARD`)
+- **Memory Footprint:** O(N) space per user/project, where N is the number of requests in the window.
+- **How it works:**
+  1. A Lua script calculates the trailing window boundary: `current_time - window_size_ms`.
+  2. It aggressively cleans up old data by dropping all timestamps older than the boundary using `ZREMRANGEBYSCORE`.
+  3. It counts the remaining timestamps in the Sorted Set using `ZCARD`.
+  4. If the count is below the maximum limit, the current request's timestamp is added (`ZADD`) and allowed.
+  5. If the count is at or above the limit, the request is blocked.
 
 ## Quick Start
 
