@@ -26,7 +26,6 @@ services:
   - type: web
     name: rate-limiter-frontend
     env: static
-    plan: free
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: ./frontend/dist
     envVars:
